@@ -69,6 +69,85 @@
     .round-tile{width:120px;height:120px;border-radius:9999px;background:var(--navy-700);color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:14px;font-weight:700;cursor:pointer;box-shadow:0 6px 16px rgba(13,26,45,.25)}
     .round-tile:hover{background:var(--navy-600)}
 
+    /* WELCOME PAGE STYLES */
+    .welcome-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .welcome-hero {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      padding: 60px 20px;
+      text-align: center;
+    }
+    
+    .welcome-content {
+      max-width: 600px;
+    }
+    
+    .welcome-logo {
+      height: 80px;
+      margin-bottom: 24px;
+    }
+    
+    .welcome-title {
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--navy-800);
+      margin-bottom: 16px;
+      line-height: 1.1;
+    }
+    
+    .welcome-subtitle {
+      font-size: 1.25rem;
+      color: var(--navy-700);
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+    
+    .welcome-features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+    }
+    
+    .feature-card {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    
+    .feature-icon {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+    }
+    
+    .feature-title {
+      font-weight: 600;
+      color: var(--navy-800);
+      margin-bottom: 8px;
+    }
+    
+    .feature-description {
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+    
+    .welcome-footer {
+      background: var(--navy-900);
+      color: white;
+      text-align: center;
+      padding: 24px;
+    }
+
     @media print{.no-print{display:none !important} header{display:none} section.card{box-shadow:none;border:0}}
   </style>
 </head>
@@ -91,10 +170,11 @@
     const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
     const LS = {
-      companies:'azccc.companies.v2', // v2 adds active/lockMessage
-      members:'azddd.members.v2',     // v2 adds active flag
-      goals:'azddd.goals.v1', entries:'azddd.entries.v1',
-      staff:'azccc.staff.v2',         // v2 adds Developer role
+      companies:'azccc.companies.v2',
+      members:'azddd.members.v2',
+      goals:'azddd.goals.v1', 
+      entries:'azddd.entries.v1',
+      staff:'azccc.staff.v2',
       session:'azccc.session.v1'
     };
     const read = (k,f=[]) => {try{const r=localStorage.getItem(k);return r?JSON.parse(r):f;}catch{return f}};
@@ -131,6 +211,46 @@
         {children}
       </section>
     );
+
+    // WELCOME PAGE COMPONENT
+    function WelcomePage({ onLoginClick }) {
+      return (
+        <div className="welcome-container">
+          <div className="welcome-hero">
+            <div className="welcome-content">
+              <img src="AZcomplicare-10.7.25.png" alt="AZ CompliCare" className="welcome-logo" onError={(e)=>e.target.style.display='none'} />
+              <h1 className="welcome-title">Welcome to AZ CompliCare Progress</h1>
+              <p className="welcome-subtitle">
+                Streamline your member progress tracking with our comprehensive management system. 
+                Track goals, log progress, and generate reports all in one place.
+              </p>
+              
+              <div className="welcome-features">
+                <div className="feature-card">
+                  <div className="feature-icon">📊</div>
+                  <h3 className="feature-title">Progress Tracking</h3>
+                  <p className="feature-description">Monitor member progress with detailed measurements and notes</p>
+                </div>
+                <div className="feature-card">
+                  <div className="feature-icon">🎯</div>
+                  <h3 className="feature-title">Goal Management</h3>
+                  <p className="feature-description">Set and track individual goals with customized strategies</p>
+                </div>
+                <div className="feature-card">
+                  <div className="feature-icon">📈</div>
+                  <h3 className="feature-title">Reporting</h3>
+                  <p className="feature-description">Generate comprehensive reports for analysis and compliance</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <footer className="welcome-footer">
+            <p>&copy; 2024 AZ CompliCare Progress. All rights reserved.</p>
+          </footer>
+        </div>
+      );
+    }
 
     // Generic click-outside dropdown
     function useClickAway(ref, onAway){
@@ -224,7 +344,8 @@
     }
 
     function App(){
-      const [tab,setTab]=useState('home');
+      const [tab,setTab]=useState('welcome');
+      const [showLoginModal, setShowLoginModal] = useState(false);
 
       const [companies,setCompanies]=useState(()=>read(LS.companies,[]));
       const [members,setMembers]=useState(()=>read(LS.members,[]));
@@ -242,11 +363,17 @@
 
       const currentUser = staff.find(s=>s.id===session?.staffId) || null;
       const isDev = currentUser?.role===ROLES.Developer;
-      const isSuper = currentUser?.role===ROLES.SuperAdmin || currentUser?.role===ROLES.SuperUser; // support old key
+      const isSuper = currentUser?.role===ROLES.SuperAdmin || currentUser?.role===ROLES.SuperUser;
       const isAdmin = currentUser?.role===ROLES.Admin || isSuper || isDev;
 
       // Expose home click for logo
-      useEffect(()=>{ window.goHome = ()=>setTab('home'); const a=document.getElementById('logoLink'); if(a){ a.onclick=(e)=>{e.preventDefault(); window.goHome();}; } },[]);
+      useEffect(()=>{ 
+        window.goHome = ()=>setTab('home'); 
+        const a=document.getElementById('logoLink'); 
+        if(a){ 
+          a.onclick=(e)=>{e.preventDefault(); window.goHome();}; 
+        } 
+      },[]);
 
       // Developer can switch companies; others bound to their company
       const [devCompanyId,setDevCompanyId]=useState('');
@@ -260,8 +387,8 @@
       // Members by company
       const companyMembersAll = members.filter(m=>m.companyId===contextCompanyId);
       const companyMembersActive = companyMembersAll.filter(m=>m.active!==false);
-      const [showInactive,setShowInactive]=useState(false); // for list screens
-      const [memberFilter,setMemberFilter]=useState('active'); // for dropdowns
+      const [showInactive,setShowInactive]=useState(false);
+      const [memberFilter,setMemberFilter]=useState('active');
       const listForAdmin = showInactive? companyMembersAll : companyMembersActive;
 
       const visibleMemberIds = new Set(isAdmin ? listForAdmin.map(m=>m.id) : (currentUser?.caseload||[]).filter(mid=>companyMembersActive.some(m=>m.id===mid)));
@@ -385,53 +512,62 @@
           alert((comp.lockMessage||'Company locked.') + '\nContact your developer.');
           return;
         }
-        setSession({staffId:user.id, at:Date.now()}); setTab('home'); setLoginPIN("");
+        setSession({staffId:user.id, at:Date.now()}); setTab('home'); setLoginPIN(""); setShowLoginModal(false);
         if(isDev) setDevCompanyId(companyId);
       };
-      const signOut=()=>{setSession(null); setTab('home');};
+      const signOut=()=>{setSession(null); setTab('welcome');};
 
       // Nav render
       useEffect(()=>{
         const root=document.getElementById('nav');
         const Nav = () => (
           <div className="row">
-            {['home','members','goals','log','reports'].map(k=> (
-              <Button key={k} variant={tab===k?'primary':'ghost'} onClick={()=>setTab(k)}>{k[0].toUpperCase()+k.slice(1)}</Button>
-            ))}
-            {(isAdmin) && <Button variant={tab==='staff'?'primary':'ghost'} onClick={()=>setTab('staff')}>Staff</Button>}
-            {isDev && <Button variant={tab==='companies'?'primary':'ghost'} onClick={()=>setTab('companies')}>Companies</Button>}
-            {currentUser && <Button variant={tab==='profile'?'primary':'ghost'} onClick={()=>setTab('profile')}>Profile</Button>}
+            {!currentUser ? (
+              <Button className="btn-primary" onClick={() => setShowLoginModal(true)}>Login</Button>
+            ) : (
+              <>
+                {['home','members','goals','log','reports'].map(k=> (
+                  <Button key={k} variant={tab===k?'primary':'ghost'} onClick={()=>setTab(k)}>{k[0].toUpperCase()+k.slice(1)}</Button>
+                ))}
+                {(isAdmin) && <Button variant={tab==='staff'?'primary':'ghost'} onClick={()=>setTab('staff')}>Staff</Button>}
+                {isDev && <Button variant={tab==='companies'?'primary':'ghost'} onClick={()=>setTab('companies')}>Companies</Button>}
+                {currentUser && <Button variant={tab==='profile'?'primary':'ghost'} onClick={()=>setTab('profile')}>Profile</Button>}
 
-            {isDev && (
-              <div className="row" style={{marginLeft:8}}>
-                <label><span style={{fontSize:11}}>Company</span>
-                  <select value={devCompanyId} onChange={e=>setDevCompanyId(e.target.value)}>
-                    {companies.map(c=> <option key={c.id} value={c.id}>{c.name} {c.active===false?'(Locked)':''}</option>)}
-                  </select>
-                </label>
-              </div>
+                {isDev && (
+                  <div className="row" style={{marginLeft:8}}>
+                    <label><span style={{fontSize:11}}>Company</span>
+                      <select value={devCompanyId} onChange={e=>setDevCompanyId(e.target.value)}>
+                        {companies.map(c=> <option key={c.id} value={c.id}>{c.name} {c.active===false?'(Locked)':''}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                )}
+
+                <div className="row" style={{marginLeft:8}}>
+                  <span className="avatar" title={currentUser.role}>{(currentUser.firstName||'?')[0]}</span>
+                  <span className="tag">{currentUser.firstName} {currentUser.lastName}</span>
+                  <span className="tag">{currentUser.role}</span>
+                  {contextCompany && currentUser.role!==ROLES.Developer && <span className="tag">{contextCompany.name}{contextCompany.active===false?' (Locked)':''}</span>}
+                  <button className="btn btn-ghost" onClick={signOut}>Sign out</button>
+                </div>
+              </>
             )}
-
-            {currentUser ? (
-              <div className="row" style={{marginLeft:8}}>
-                <span className="avatar" title={currentUser.role}>{(currentUser.firstName||'?')[0]}</span>
-                <span className="tag">{currentUser.firstName} {currentUser.lastName}</span>
-                <span className="tag">{currentUser.role}</span>
-                {contextCompany && currentUser.role!==ROLES.Developer && <span className="tag">{contextCompany.name}{contextCompany.active===false?' (Locked)':''}</span>}
-                <button className="btn btn-ghost" onClick={signOut}>Sign out</button>
-              </div>
-            ) : null}
           </div>
         );
         ReactDOM.createRoot(root).render(<Nav/>);
-      },[tab,currentUser,isAdmin,isDev,companies,devCompanyId,contextCompany]);
+      },[tab,currentUser,isAdmin,isDev,companies,devCompanyId,contextCompany,showLoginModal]);
 
       // If no staff exist, bootstrap Developer account (no company yet)
       const needsBootstrap = staff.length===0;
 
       return (
         <>
-          {/* COMPANY LOCK OVERLAY (blocks admins/providers if company locked) */}
+          {/* WELCOME PAGE - Show when not logged in */}
+          {!currentUser && tab === 'welcome' && (
+            <WelcomePage onLoginClick={() => setShowLoginModal(true)} />
+          )}
+
+          {/* COMPANY LOCK OVERLAY */}
           {currentUser && !isDev && companyLocked && (
             <div className="overlay">
               <div className="panel">
@@ -444,8 +580,8 @@
             </div>
           )}
 
-          {/* AUTH OVERLAY */}
-          {!needsBootstrap && !currentUser && (
+          {/* LOGIN MODAL */}
+          {showLoginModal && (
             <div className="overlay">
               <div className="panel">
                 <h3>Secure Login</h3>
@@ -464,6 +600,7 @@
                 </div>
                 <div className="row" style={{marginTop:12}}>
                   <Button onClick={doLogin}>Sign in</Button>
+                  <Button variant="ghost" onClick={() => setShowLoginModal(false)}>Cancel</Button>
                 </div>
               </div>
             </div>
@@ -478,451 +615,457 @@
                 const developer={id:uid(),companyId:'',firstName:dev.firstName,lastName:dev.lastName,email:dev.email,phone:dev.phone,role:ROLES.Developer,pinHash,caseload:[]};
                 setStaff([developer]);
                 setSession({staffId:developer.id,at:Date.now()});
+                setTab('home');
               }} />
             </Section>
           )}
 
-          {/* HOME */}
-          {tab==='home' && (
+          {/* MAIN APPLICATION - Only show when logged in */}
+          {currentUser && tab !== 'welcome' && (
             <>
-              <div className="home-hero">
-                <img src="AZcomplicare-10.7.25.png" alt="Logo" style={{height:64,marginBottom:8}} onError={(e)=>e.target.style.display='none'} />
-                <h2 style={{margin:0,color:'var(--navy-800)'}}>Welcome to AZ CompliCare Progress</h2>
-                <p className="muted" style={{marginTop:6}}>Quick actions</p>
-              </div>
-              <div className="tiles">
-                <div className="round-tile" onClick={()=>setTab('members')}>Members</div>
-                <div className="round-tile" onClick={()=>setTab('goals')}>Goals</div>
-                <div className="round-tile" onClick={()=>setTab('log')}>Log Note</div>
-                <div className="round-tile" onClick={()=>setTab('reports')}>Reports</div>
-                {(isAdmin) && <div className="round-tile" onClick={()=>setTab('staff')}>Staff</div>}
-                {isDev && <div className="round-tile" onClick={()=>setTab('companies')}>Companies</div>}
-                {currentUser && <div className="round-tile" onClick={()=>setTab('profile')}>My Profile</div>}
-                <div className="round-tile" onClick={()=>alert('Legend: I=Independent, V=Verbal, R=Refuse, H=Hand over hand, NA=Not completed')}>Legend</div>
-              </div>
-            </>
-          )}
-
-          {/* MEMBERS */}
-          {tab==='members' && (
-            <>
-              <Section title={`Members ${contextCompany? '— '+contextCompany.name:''}`} actions={
-                <div className="row">
-                  {isAdmin && <Button onClick={startNewMember}>New Member</Button>}
-                  {isAdmin && (
-                    <label className="row" title="Show inactive members too" style={{marginLeft:8}}>
-                      <input type="checkbox" checked={showInactive} onChange={e=>setShowInactive(e.target.checked)} />
-                      <span className="muted">Show inactive</span>
-                    </label>
-                  )}
-                </div>
-              }>
-                <div className="grid cols-2">
-                  {(isAdmin?listForAdmin:visibleMembers).length===0 && <p className="muted">No members yet.</p>}
-                  {(isAdmin?listForAdmin:visibleMembers).map(m=> (
-                    <div key={m.id} className="card" style={{margin:0,opacity:m.active===false?0.7:1}}>
-                      <div className="row">
-                        <div>
-                          <div style={{fontWeight:700,color:'var(--navy-800)'}}>{m.firstName} {m.lastName}</div>
-                          <div style={{fontSize:13,color:'#475467',marginTop:4}}>
-                            <span className="pill">DOB: {m.dob||'—'}</span>
-                            <span className="pill">DDD: {m.dddNumber||'—'}</span>
-                            <span className="pill">Diagnosis: {m.diagnosis||'—'}</span>
-                            <span className="pill">{m.active===false? 'Inactive':'Active'}</span>
-                          </div>
-                          {m.notes && <p className="muted" style={{fontSize:14,marginTop:8}}>{m.notes}</p>}
-                        </div>
-                        <div className="right no-print">
-                          <Button variant="ghost" onClick={()=>{setSelectedMemberId(m.id);setTab('goals')}}>Open</Button>
-                          {isAdmin && <Button variant="ghost" onClick={()=>startEditMember(m)}>Edit</Button>}
-                          {isAdmin && <Button variant={m.active===false? 'primary':'danger'} onClick={()=>toggleMemberActive(m)}>{m.active===false? 'Mark Active':'Mark Inactive'}</Button>}
-                          {isAdmin && <Button variant="danger" onClick={()=>deleteMember(m.id)}>Delete</Button>}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Section>
-
-              {isAdmin && (
-                <Section title={editingMemberId? 'Edit Member':'New Member'}>
-                  <div className="grid cols-3">
-                    <label><span>First Name</span><input value={memberForm.firstName} onChange={e=>setMemberForm({...memberForm,firstName:e.target.value})}/></label>
-                    <label><span>Last Name</span><input value={memberForm.lastName} onChange={e=>setMemberForm({...memberForm,lastName:e.target.value})}/></label>
-                    <label><span>Date of Birth</span><input type="date" value={memberForm.dob} onChange={e=>setMemberForm({...memberForm,dob:e.target.value})}/></label>
-                    <label><span>DDD Number</span><input value={memberForm.dddNumber} onChange={e=>setMemberForm({...memberForm,dddNumber:e.target.value})}/></label>
-                    <label><span>Diagnosis</span><input value={memberForm.diagnosis} onChange={e=>setMemberForm({...memberForm,diagnosis:e.target.value})}/></label>
-                    <label><span>Email</span><input type="email" value={memberForm.email} onChange={e=>setMemberForm({...memberForm,email:e.target.value})}/></label>
-                    <label><span>Phone</span><input value={memberForm.phone} onChange={e=>setMemberForm({...memberForm,phone:e.target.value})}/></label>
-                    <label><span>Address</span><input value={memberForm.address} onChange={e=>setMemberForm({...memberForm,address:e.target.value})}/></label>
-                    <label><span>City</span><input value={memberForm.city} onChange={e=>setMemberForm({...memberForm,city:e.target.value})}/></label>
-                    <label><span>State</span><input value={memberForm.state} onChange={e=>setMemberForm({...memberForm,state:e.target.value})}/></label>
-                    <label><span>Zip</span><input value={memberForm.zip} onChange={e=>setMemberForm({...memberForm,zip:e.target.value})}/></label>
-                    <label><span>Guardian Name</span><input value={memberForm.guardianName} onChange={e=>setMemberForm({...memberForm,guardianName:e.target.value})}/></label>
-                    <label><span>Guardian Phone</span><input value={memberForm.guardianPhone} onChange={e=>setMemberForm({...memberForm,guardianPhone:e.target.value})}/></label>
-                    <label><span>Status</span>
-                      <select value={memberForm.active===false? '0':'1'} onChange={e=>setMemberForm({...memberForm,active:e.target.value==='1'})}>
-                        <option value="1">Active</option>
-                        <option value="0">Inactive (stored)</option>
-                      </select>
-                    </label>
-                    <label className="cols-3"><span>Notes / Background</span><textarea value={memberForm.notes} onChange={e=>setMemberForm({...memberForm,notes:e.target.value})}></textarea></label>
+              {/* HOME */}
+              {tab==='home' && (
+                <>
+                  <div className="home-hero">
+                    <img src="AZcomplicare-10.7.25.png" alt="Logo" style={{height:64,marginBottom:8}} onError={(e)=>e.target.style.display='none'} />
+                    <h2 style={{margin:0,color:'var(--navy-800)'}}>Welcome to AZ CompliCare Progress</h2>
+                    <p className="muted" style={{marginTop:6}}>Quick actions</p>
                   </div>
-                  <div className="row no-print" style={{marginTop:8}}>
-                    <Button onClick={saveMember}>Save Member</Button>
-                    <Button variant="ghost" onClick={()=>setMemberForm({...emptyMember,companyId:contextCompanyId})}>Clear</Button>
+                  <div className="tiles">
+                    <div className="round-tile" onClick={()=>setTab('members')}>Members</div>
+                    <div className="round-tile" onClick={()=>setTab('goals')}>Goals</div>
+                    <div className="round-tile" onClick={()=>setTab('log')}>Log Note</div>
+                    <div className="round-tile" onClick={()=>setTab('reports')}>Reports</div>
+                    {(isAdmin) && <div className="round-tile" onClick={()=>setTab('staff')}>Staff</div>}
+                    {isDev && <div className="round-tile" onClick={()=>setTab('companies')}>Companies</div>}
+                    {currentUser && <div className="round-tile" onClick={()=>setTab('profile')}>My Profile</div>}
+                    <div className="round-tile" onClick={()=>alert('Legend: I=Independent, V=Verbal, R=Refuse, H=Hand over hand, NA=Not completed')}>Legend</div>
                   </div>
-                </Section>
+                </>
               )}
-            </>
-          )}
 
-          {/* GOALS */}
-          {tab==='goals' && (
-            <>
-              <Section title={`Select Member ${contextCompany? '— '+contextCompany.name:''}`} actions={
-                <MemberPicker members={members.filter(m=>m.companyId===contextCompanyId)} value={selectedMemberId} onChange={setSelectedMemberId} filter={memberFilter} onFilterChange={setMemberFilter} />
-              }>
-                {selectedMember? <div style={{fontSize:14}}>Managing goals for <b style={{color:'var(--navy-800)'}}>{selectedMember.firstName} {selectedMember.lastName}</b> {selectedMember.active===false && <span className="pill">Inactive</span>}</div>:<p className="muted">Choose a member to continue.</p>}
-              </Section>
-
-              <Section title="Goals" actions={isAdmin && selectedMember && selectedMember.active!==false && <Button onClick={startNewGoal}>New Goal</Button>}>
-                {memberGoals.length===0? <p className="muted">No goals yet for this member.</p> : (
-                  <div className="grid">
-                    {memberGoals.map(g=> (
-                      <div key={g.id} className="card" style={{margin:0}}>
-                        <div className="row">
-                          <div>
-                            <div style={{fontWeight:700,color:'var(--navy-800)'}}>{g.name}</div>
-                            <div style={{fontSize:14,color:'#475467'}}>Strategy: {g.strategy || '—'}</div>
-                            <div style={{fontSize:12,marginTop:6}}>
-                              <span className="pill">Start: {g.startDate}</span>
-                              <span className="pill">Status: {g.active? 'Active':'Inactive'}</span>
-                            </div>
-                          </div>
-                          <div className="right no-print">
-                            {isAdmin && <Button variant="ghost" onClick={()=>editGoal(g)}>Edit</Button>}
-                            {isAdmin && <Button variant="danger" onClick={()=>deleteGoal(g.id)}>Delete</Button>}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Section>
-
-              {isAdmin && selectedMember && selectedMember.active!==false && (
-                <Section title={goalForm.id? 'Edit/New Goal':'New Goal'}>
-                  <div className="grid cols-3">
-                    <label><span>Goal Name</span><input value={goalForm.name} onChange={e=>setGoalForm({...goalForm,name:e.target.value})}/></label>
-                    <label><span>Start Date</span><input type="date" value={goalForm.startDate} onChange={e=>setGoalForm({...goalForm,startDate:e.target.value})}/></label>
-                    <label><span>Status</span>
-                      <select value={goalForm.active? '1':'0'} onChange={e=>setGoalForm({...goalForm,active:e.target.value==='1'})}>
-                        <option value="1">Active</option><option value="0">Inactive</option>
-                      </select>
-                    </label>
-                    <label className="cols-3"><span>Strategy</span><textarea value={goalForm.strategy} onChange={e=>setGoalForm({...goalForm,strategy:e.target.value})}></textarea></label>
-                  </div>
-                  <div className="row no-print" style={{marginTop:8}}>
-                    <Button onClick={saveGoal}>Save Goal</Button>
-                    <Button variant="ghost" onClick={()=>setGoalForm(emptyGoal)}>Clear</Button>
-                  </div>
-                </Section>
-              )}
-            </>
-          )}
-
-          {/* LOG */}
-          {tab==='log' && (
-            <>
-              <Section title={`Log Progress Note ${contextCompany? '— '+contextCompany.name:''}`}>
-                <div className="grid cols-4">
-                  <label className="cols-2"><span>Member</span>
-                    <MemberPicker members={members.filter(m=>m.companyId===contextCompanyId)} value={selectedMemberId} onChange={(id)=>{setSelectedMemberId(id); setLog(l=>({...l,memberId:id,goalId:""}))}} filter={memberFilter} onFilterChange={setMemberFilter} />
-                  </label>
-                  <label className="cols-2"><span>Goal</span>
-                    <select value={log.goalId} onChange={e=>setLog(l=>({...l,goalId:e.target.value}))}>
-                      <option value="">— Select —</option>
-                      {memberActiveGoals.map(g=> <option key={g.id} value={g.id}>{g.name}</option>)}
-                    </select>
-                  </label>
-                  <label><span>Date</span><input type="date" value={log.date} onChange={e=>setLog(l=>({...l,date:e.target.value}))}/></label>
-                  <label><span>Staff</span><input value={log.staffName} onChange={e=>setLog(l=>({...l,staffName:e.target.value}))}/></label>
-                  <div className="cols-2">
-                    <span style={{display:'block',fontSize:12,color:'var(--navy-800)'}}>Measurement</span>
-                    <div className="row" style={{marginTop:8}}>
-                      {MEASURES.map(m => (
-                        <label key={m.code} className="row" style={{border:'1px solid var(--gray-200)',borderRadius:10,padding:'6px 10px'}}>
-                          <input type="radio" name="measure" value={m.code} checked={log.measure===m.code} onChange={e=>setLog(l=>({...l,measure:e.target.value}))}/>
-                          <span style={{fontSize:14,color:'var(--navy-800)'}}><b>{m.code}</b> – {m.label}</span>
+              {/* MEMBERS */}
+              {tab==='members' && (
+                <>
+                  <Section title={`Members ${contextCompany? '— '+contextCompany.name:''}`} actions={
+                    <div className="row">
+                      {isAdmin && <Button onClick={startNewMember}>New Member</Button>}
+                      {isAdmin && (
+                        <label className="row" title="Show inactive members too" style={{marginLeft:8}}>
+                          <input type="checkbox" checked={showInactive} onChange={e=>setShowInactive(e.target.checked)} />
+                          <span className="muted">Show inactive</span>
                         </label>
-                      ))}
+                      )}
                     </div>
-                  </div>
-                  <label className="cols-4"><span>Progress Note</span><textarea value={log.note} onChange={e=>setLog(l=>({...l,note:e.target.value}))}></textarea></label>
-                </div>
-                <div className="row no-print" style={{marginTop:8}}>
-                  <Button onClick={addEntry}>Save Entry</Button>
-                  <Button variant="ghost" onClick={()=>setLog(l=>({...l,note:""}))}>Clear Note</Button>
-                </div>
-              </Section>
-
-              <Section title="This Month's Entries" actions={<>
-                <input type="month" value={reportMonth} onChange={e=>setReportMonth(e.target.value)} />
-              </>}>
-                {memberMonthEntries.length===0? <p className="muted">No entries for the selected month.</p> : (
-                  <div style={{overflowX:'auto'}}>
-                    <table>
-                      <thead><tr>
-                        <th>Date</th><th>Member</th><th>Goal</th><th>Measure</th><th>Staff</th><th>Note</th>
-                      </tr></thead>
-                      <tbody>
-                        {memberMonthEntries.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=>{
-                          const m = members.find(x=>x.id===e.memberId);
-                          const g = goals.find(x=>x.id===e.goalId);
-                          const d = new Date(e.date);
-                          return (
-                            <tr key={e.id}>
-                              <td>{d.toLocaleDateString()}</td>
-                              <td>{m? `${m.lastName}, ${m.firstName}`:'—'}</td>
-                              <td>{g? g.name:'—'}</td>
-                              <td>{e.measure}</td>
-                              <td>{e.staff || e.staffName || ''}</td>
-                              <td>{e.note}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </Section>
-            </>
-          )}
-
-          {/* REPORTS */}
-          {tab==='reports' && (
-            <>
-              <Section title="Report Settings" actions={<>
-                <input type="month" value={reportMonth} onChange={e=>setReportMonth(e.target.value)} />
-              </>}>
-                <div className="grid cols-2">
-                  <label><span>Member</span>
-                    <MemberPicker members={members.filter(m=>m.companyId===contextCompanyId)} value={selectedMemberId} onChange={setSelectedMemberId} filter={memberFilter} onFilterChange={setMemberFilter} />
-                  </label>
-                </div>
-              </Section>
-
-              <Section title="Monthly Progress Report">
-                {selectedMember? (
-                  <div>
-                    <div>
-                      <h3 style={{margin:'4px 0',color:'var(--navy-800)'}}>{selectedMember.firstName} {selectedMember.lastName}</h3>
-                      <p className="muted" style={{margin:'4px 0'}}>Month: {reportMonth} {contextCompany? '— '+contextCompany.name:''}</p>
-                      <div style={{fontSize:12,margin:'6px 0'}}>
-                        <span className="pill">DOB: {selectedMember.dob||'—'}</span>
-                        <span className="pill">DDD: {selectedMember.dddNumber||'—'}</span>
-                        <span className="pill">Diagnosis: {selectedMember.diagnosis||'—'}</span>
-                        <span className="pill">{selectedMember.active===false? 'Inactive':'Active'}</span>
-                      </div>
-                    </div>
-                    {[...groupedByGoal.entries()].map(([goalId,list])=>{
-                      const g = goals.find(x=>x.id===goalId);
-                      const stats = measureStats(list);
-                      return (
-                        <div key={goalId} className="card">
+                  }>
+                    <div className="grid cols-2">
+                      {(isAdmin?listForAdmin:visibleMembers).length===0 && <p className="muted">No members yet.</p>}
+                      {(isAdmin?listForAdmin:visibleMembers).map(m=> (
+                        <div key={m.id} className="card" style={{margin:0,opacity:m.active===false?0.7:1}}>
                           <div className="row">
                             <div>
-                              <div style={{fontWeight:700,color:'var(--navy-800)'}}>Goal: {g? g.name:'—'}</div>
-                              <div style={{fontSize:14,color:'#475467'}}>Strategy: {g?.strategy||'—'}</div>
+                              <div style={{fontWeight:700,color:'var(--navy-800)'}}>{m.firstName} {m.lastName}</div>
+                              <div style={{fontSize:13,color:'#475467',marginTop:4}}>
+                                <span className="pill">DOB: {m.dob||'—'}</span>
+                                <span className="pill">DDD: {m.dddNumber||'—'}</span>
+                                <span className="pill">Diagnosis: {m.diagnosis||'—'}</span>
+                                <span className="pill">{m.active===false? 'Inactive':'Active'}</span>
+                              </div>
+                              {m.notes && <p className="muted" style={{fontSize:14,marginTop:8}}>{m.notes}</p>}
                             </div>
-                            <div>
-                              <div style={{fontSize:14}}>Total entries: <b>{stats.total}</b></div>
-                              <div style={{fontSize:12,marginTop:6}}>
-                                {MEASURES.map(m=> <span key={m.code} className="pill">{m.code}: {stats.counts[m.code]} ({stats.pct[m.code]}%)</span>)}
+                            <div className="right no-print">
+                              <Button variant="ghost" onClick={()=>{setSelectedMemberId(m.id);setTab('goals')}}>Open</Button>
+                              {isAdmin && <Button variant="ghost" onClick={()=>startEditMember(m)}>Edit</Button>}
+                              {isAdmin && <Button variant={m.active===false? 'primary':'danger'} onClick={()=>toggleMemberActive(m)}>{m.active===false? 'Mark Active':'Mark Inactive'}</Button>}
+                              {isAdmin && <Button variant="danger" onClick={()=>deleteMember(m.id)}>Delete</Button>}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Section>
+
+                  {isAdmin && (
+                    <Section title={editingMemberId? 'Edit Member':'New Member'}>
+                      <div className="grid cols-3">
+                        <label><span>First Name</span><input value={memberForm.firstName} onChange={e=>setMemberForm({...memberForm,firstName:e.target.value})}/></label>
+                        <label><span>Last Name</span><input value={memberForm.lastName} onChange={e=>setMemberForm({...memberForm,lastName:e.target.value})}/></label>
+                        <label><span>Date of Birth</span><input type="date" value={memberForm.dob} onChange={e=>setMemberForm({...memberForm,dob:e.target.value})}/></label>
+                        <label><span>DDD Number</span><input value={memberForm.dddNumber} onChange={e=>setMemberForm({...memberForm,dddNumber:e.target.value})}/></label>
+                        <label><span>Diagnosis</span><input value={memberForm.diagnosis} onChange={e=>setMemberForm({...memberForm,diagnosis:e.target.value})}/></label>
+                        <label><span>Email</span><input type="email" value={memberForm.email} onChange={e=>setMemberForm({...memberForm,email:e.target.value})}/></label>
+                        <label><span>Phone</span><input value={memberForm.phone} onChange={e=>setMemberForm({...memberForm,phone:e.target.value})}/></label>
+                        <label><span>Address</span><input value={memberForm.address} onChange={e=>setMemberForm({...memberForm,address:e.target.value})}/></label>
+                        <label><span>City</span><input value={memberForm.city} onChange={e=>setMemberForm({...memberForm,city:e.target.value})}/></label>
+                        <label><span>State</span><input value={memberForm.state} onChange={e=>setMemberForm({...memberForm,state:e.target.value})}/></label>
+                        <label><span>Zip</span><input value={memberForm.zip} onChange={e=>setMemberForm({...memberForm,zip:e.target.value})}/></label>
+                        <label><span>Guardian Name</span><input value={memberForm.guardianName} onChange={e=>setMemberForm({...memberForm,guardianName:e.target.value})}/></label>
+                        <label><span>Guardian Phone</span><input value={memberForm.guardianPhone} onChange={e=>setMemberForm({...memberForm,guardianPhone:e.target.value})}/></label>
+                        <label><span>Status</span>
+                          <select value={memberForm.active===false? '0':'1'} onChange={e=>setMemberForm({...memberForm,active:e.target.value==='1'})}>
+                            <option value="1">Active</option>
+                            <option value="0">Inactive (stored)</option>
+                          </select>
+                        </label>
+                        <label className="cols-3"><span>Notes / Background</span><textarea value={memberForm.notes} onChange={e=>setMemberForm({...memberForm,notes:e.target.value})}></textarea></label>
+                      </div>
+                      <div className="row no-print" style={{marginTop:8}}>
+                        <Button onClick={saveMember}>Save Member</Button>
+                        <Button variant="ghost" onClick={()=>setMemberForm({...emptyMember,companyId:contextCompanyId})}>Clear</Button>
+                      </div>
+                    </Section>
+                  )}
+                </>
+              )}
+
+              {/* GOALS */}
+              {tab==='goals' && (
+                <>
+                  <Section title={`Select Member ${contextCompany? '— '+contextCompany.name:''}`} actions={
+                    <MemberPicker members={members.filter(m=>m.companyId===contextCompanyId)} value={selectedMemberId} onChange={setSelectedMemberId} filter={memberFilter} onFilterChange={setMemberFilter} />
+                  }>
+                    {selectedMember? <div style={{fontSize:14}}>Managing goals for <b style={{color:'var(--navy-800)'}}>{selectedMember.firstName} {selectedMember.lastName}</b> {selectedMember.active===false && <span className="pill">Inactive</span>}</div>:<p className="muted">Choose a member to continue.</p>}
+                  </Section>
+
+                  <Section title="Goals" actions={isAdmin && selectedMember && selectedMember.active!==false && <Button onClick={startNewGoal}>New Goal</Button>}>
+                    {memberGoals.length===0? <p className="muted">No goals yet for this member.</p> : (
+                      <div className="grid">
+                        {memberGoals.map(g=> (
+                          <div key={g.id} className="card" style={{margin:0}}>
+                            <div className="row">
+                              <div>
+                                <div style={{fontWeight:700,color:'var(--navy-800)'}}>{g.name}</div>
+                                <div style={{fontSize:14,color:'#475467'}}>Strategy: {g.strategy || '—'}</div>
+                                <div style={{fontSize:12,marginTop:6}}>
+                                  <span className="pill">Start: {g.startDate}</span>
+                                  <span className="pill">Status: {g.active? 'Active':'Inactive'}</span>
+                                </div>
+                              </div>
+                              <div className="right no-print">
+                                {isAdmin && <Button variant="ghost" onClick={()=>editGoal(g)}>Edit</Button>}
+                                {isAdmin && <Button variant="danger" onClick={()=>deleteGoal(g.id)}>Delete</Button>}
                               </div>
                             </div>
                           </div>
-                          <div style={{overflowX:'auto'}}>
-                            <table>
-                              <thead><tr><th>Date</th><th>Measure</th><th>Staff</th><th>Note</th></tr></thead>
-                              <tbody>
-                                {list.slice().sort((a,b)=>new Date(a.date)-new Date(b.date)).map(e=> (
-                                  <tr key={e.id}><td>{new Date(e.date).toLocaleDateString()}</td><td>{e.measure}</td><td>{e.staff || e.staffName || ''}</td><td>{e.note}</td></tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      )
-                    })}
-                    {groupedByGoal.size===0 && <p className="muted">No entries for this member in the selected month.</p>}
-                    <div className="muted" style={{fontSize:12,marginTop:8}}>Legend — I: Independent • V: Verbal • R: Refuse • H: Hand over hand • NA: Not completed</div>
-                  </div>
-                ): <p className="muted">Select a member to generate the report.</p>}
-              </Section>
-            </>
-          )}
+                        ))}
+                      </div>
+                    )}
+                  </Section>
 
-          {/* STAFF (Admins & Developer) */}
-          {tab==='staff' && isAdmin && (
-            <>
-              <Section title={`Staff ${contextCompany? '— '+contextCompany.name:''}`} actions={<Button onClick={startNewStaff}>New Staff</Button>}>
-                <div className="row" style={{marginBottom:8}}>
-                  <StaffPicker staff={staff.filter(s=> isDev? (contextCompanyId? s.companyId===contextCompanyId:true) : s.companyId===contextCompanyId)} value={editingStaffId} onChange={(id)=>{ const s=staff.find(x=>x.id===id); if(s){ startEditStaff(s); } }} />
-                  <span className="muted">Select a staff member to edit</span>
-                </div>
-                <div className="grid cols-2">
-                  {staff.filter(s=> (isDev? (contextCompanyId? s.companyId===contextCompanyId:true) : s.companyId===contextCompanyId)).length===0 && <p className="muted">No staff added.</p>}
-                  {staff.filter(s=> (isDev? (contextCompanyId? s.companyId===contextCompanyId:true) : s.companyId===contextCompanyId)).map(s=> (
-                    <div key={s.id} className="card" style={{margin:0}}>
-                      <div className="row">
-                        <div>
-                          <div style={{fontWeight:700,color:'var(--navy-800)'}}>{s.firstName} {s.lastName}</div>
-                          <div className="muted" style={{fontSize:14}}>{s.email} • {s.phone||''}</div>
-                          <div style={{marginTop:6}}>
-                            <span className="pill">{s.role}</span>
-                            <span className="pill">Caseload: {(s.caseload||[]).length}</span>
-                            {isDev && <span className="pill">Company: {(companies.find(c=>c.id===s.companyId)||{}).name||'—'}</span>}
-                          </div>
-                        </div>
-                        <div className="right no-print">
-                          <Button variant="ghost" onClick={()=>startEditStaff(s)}>Edit</Button>
-                          <Button variant="danger" onClick={()=>deleteStaff(s.id)}>Delete</Button>
+                  {isAdmin && selectedMember && selectedMember.active!==false && (
+                    <Section title={goalForm.id? 'Edit/New Goal':'New Goal'}>
+                      <div className="grid cols-3">
+                        <label><span>Goal Name</span><input value={goalForm.name} onChange={e=>setGoalForm({...goalForm,name:e.target.value})}/></label>
+                        <label><span>Start Date</span><input type="date" value={goalForm.startDate} onChange={e=>setGoalForm({...goalForm,startDate:e.target.value})}/></label>
+                        <label><span>Status</span>
+                          <select value={goalForm.active? '1':'0'} onChange={e=>setGoalForm({...goalForm,active:e.target.value==='1'})}>
+                            <option value="1">Active</option><option value="0">Inactive</option>
+                          </select>
+                        </label>
+                        <label className="cols-3"><span>Strategy</span><textarea value={goalForm.strategy} onChange={e=>setGoalForm({...goalForm,strategy:e.target.value})}></textarea></label>
+                      </div>
+                      <div className="row no-print" style={{marginTop:8}}>
+                        <Button onClick={saveGoal}>Save Goal</Button>
+                        <Button variant="ghost" onClick={()=>setGoalForm(emptyGoal)}>Clear</Button>
+                      </div>
+                    </Section>
+                  )}
+                </>
+              )}
+
+              {/* LOG */}
+              {tab==='log' && (
+                <>
+                  <Section title={`Log Progress Note ${contextCompany? '— '+contextCompany.name:''}`}>
+                    <div className="grid cols-4">
+                      <label className="cols-2"><span>Member</span>
+                        <MemberPicker members={members.filter(m=>m.companyId===contextCompanyId)} value={selectedMemberId} onChange={(id)=>{setSelectedMemberId(id); setLog(l=>({...l,memberId:id,goalId:""}))}} filter={memberFilter} onFilterChange={setMemberFilter} />
+                      </label>
+                      <label className="cols-2"><span>Goal</span>
+                        <select value={log.goalId} onChange={e=>setLog(l=>({...l,goalId:e.target.value}))}>
+                          <option value="">— Select —</option>
+                          {memberActiveGoals.map(g=> <option key={g.id} value={g.id}>{g.name}</option>)}
+                        </select>
+                      </label>
+                      <label><span>Date</span><input type="date" value={log.date} onChange={e=>setLog(l=>({...l,date:e.target.value}))}/></label>
+                      <label><span>Staff</span><input value={log.staffName} onChange={e=>setLog(l=>({...l,staffName:e.target.value}))}/></label>
+                      <div className="cols-2">
+                        <span style={{display:'block',fontSize:12,color:'var(--navy-800)'}}>Measurement</span>
+                        <div className="row" style={{marginTop:8}}>
+                          {MEASURES.map(m => (
+                            <label key={m.code} className="row" style={{border:'1px solid var(--gray-200)',borderRadius:10,padding:'6px 10px'}}>
+                              <input type="radio" name="measure" value={m.code} checked={log.measure===m.code} onChange={e=>setLog(l=>({...l,measure:e.target.value}))}/>
+                              <span style={{fontSize:14,color:'var(--navy-800)'}}><b>{m.code}</b> – {m.label}</span>
+                            </label>
+                          ))}
                         </div>
                       </div>
+                      <label className="cols-4"><span>Progress Note</span><textarea value={log.note} onChange={e=>setLog(l=>({...l,note:e.target.value}))}></textarea></label>
                     </div>
-                  ))}
-                </div>
-              </Section>
+                    <div className="row no-print" style={{marginTop:8}}>
+                      <Button onClick={addEntry}>Save Entry</Button>
+                      <Button variant="ghost" onClick={()=>setLog(l=>({...l,note:""}))}>Clear Note</Button>
+                    </div>
+                  </Section>
 
-              <Section title={editingStaffId? 'Edit Staff':'New Staff'}>
-                <div className="grid cols-3">
-                  {isDev && (
-                    <label><span>Company</span>
-                      <select value={staffForm.companyId||''} onChange={e=>setStaffForm({...staffForm,companyId:e.target.value})}>
-                        <option value="">— Select —</option>
-                        {companies.map(c=> <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
-                    </label>
-                  )}
-                  {!isDev && <div className="pill">Company: {contextCompany? contextCompany.name:'—'}</div>}
-                  <label><span>First Name</span><input value={staffForm.firstName} onChange={e=>setStaffForm({...staffForm,firstName:e.target.value})}/></label>
-                  <label><span>Last Name</span><input value={staffForm.lastName} onChange={e=>setStaffForm({...staffForm,lastName:e.target.value})}/></label>
-                  <label><span>Role</span>
-                    <select value={staffForm.role} onChange={e=>setStaffForm({...staffForm,role:e.target.value})}>
-                      <option>{ROLES.Provider}</option>
-                      <option>{ROLES.Admin}</option>
-                      <option>{ROLES.SuperAdmin}</option>
-                      {isDev && <option>{ROLES.Developer}</option>}
-                    </select>
-                  </label>
-                  <label className="cols-2"><span>Email (login)</span><input type="email" value={staffForm.email} onChange={e=>setStaffForm({...staffForm,email:e.target.value})}/></label>
-                  <label><span>Phone</span><input value={staffForm.phone} onChange={e=>setStaffForm({...staffForm,phone:e.target.value})}/></label>
-                  <div className="cols-3" style={{borderTop:'1px dashed var(--gray-200)',paddingTop:10,marginTop:2}}>
-                    <span className="muted" style={{fontSize:12}}>Set/Reset 6‑digit PIN (leave blank to keep current)</span>
-                    <PINSetter onSave={(pin)=>saveStaff(pin)} onSaveLabel={editingStaffId? 'Save Staff':'Create Staff'} />
-                  </div>
-                  <div className="cols-3" style={{borderTop:'1px dashed var(--gray-200)',paddingTop:10}}>
-                    <span className="muted" style={{fontSize:12}}>Assign Caseload (active members in this company)</span>
-                    <div className="grid cols-3">
-                      {companyMembersActive.map(m=> (
-                        <label key={m.id} className="row" style={{border:'1px solid var(--gray-200)',borderRadius:10,padding:'6px 10px'}}>
-                          <input type="checkbox" checked={(staffForm.caseload||[]).includes(m.id)} onChange={()=>toggleCaseload(m.id)} />
-                          <span>{m.lastName}, {m.firstName}</span>
-                        </label>
+                  <Section title="This Month's Entries" actions={<>
+                    <input type="month" value={reportMonth} onChange={e=>setReportMonth(e.target.value)} />
+                  </>}>
+                    {memberMonthEntries.length===0? <p className="muted">No entries for the selected month.</p> : (
+                      <div style={{overflowX:'auto'}}>
+                        <table>
+                          <thead><tr>
+                            <th>Date</th><th>Member</th><th>Goal</th><th>Measure</th><th>Staff</th><th>Note</th>
+                          </tr></thead>
+                          <tbody>
+                            {memberMonthEntries.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=>{
+                              const m = members.find(x=>x.id===e.memberId);
+                              const g = goals.find(x=>x.id===e.goalId);
+                              const d = new Date(e.date);
+                              return (
+                                <tr key={e.id}>
+                                  <td>{d.toLocaleDateString()}</td>
+                                  <td>{m? `${m.lastName}, ${m.firstName}`:'—'}</td>
+                                  <td>{g? g.name:'—'}</td>
+                                  <td>{e.measure}</td>
+                                  <td>{e.staff || e.staffName || ''}</td>
+                                  <td>{e.note}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </Section>
+                </>
+              )}
+
+              {/* REPORTS */}
+              {tab==='reports' && (
+                <>
+                  <Section title="Report Settings" actions={<>
+                    <input type="month" value={reportMonth} onChange={e=>setReportMonth(e.target.value)} />
+                  </>}>
+                    <div className="grid cols-2">
+                      <label><span>Member</span>
+                        <MemberPicker members={members.filter(m=>m.companyId===contextCompanyId)} value={selectedMemberId} onChange={setSelectedMemberId} filter={memberFilter} onFilterChange={setMemberFilter} />
+                      </label>
+                    </div>
+                  </Section>
+
+                  <Section title="Monthly Progress Report">
+                    {selectedMember? (
+                      <div>
+                        <div>
+                          <h3 style={{margin:'4px 0',color:'var(--navy-800)'}}>{selectedMember.firstName} {selectedMember.lastName}</h3>
+                          <p className="muted" style={{margin:'4px 0'}}>Month: {reportMonth} {contextCompany? '— '+contextCompany.name:''}</p>
+                          <div style={{fontSize:12,margin:'6px 0'}}>
+                            <span className="pill">DOB: {selectedMember.dob||'—'}</span>
+                            <span className="pill">DDD: {selectedMember.dddNumber||'—'}</span>
+                            <span className="pill">Diagnosis: {selectedMember.diagnosis||'—'}</span>
+                            <span className="pill">{selectedMember.active===false? 'Inactive':'Active'}</span>
+                          </div>
+                        </div>
+                        {[...groupedByGoal.entries()].map(([goalId,list])=>{
+                          const g = goals.find(x=>x.id===goalId);
+                          const stats = measureStats(list);
+                          return (
+                            <div key={goalId} className="card">
+                              <div className="row">
+                                <div>
+                                  <div style={{fontWeight:700,color:'var(--navy-800)'}}>Goal: {g? g.name:'—'}</div>
+                                  <div style={{fontSize:14,color:'#475467'}}>Strategy: {g?.strategy||'—'}</div>
+                                </div>
+                                <div>
+                                  <div style={{fontSize:14}}>Total entries: <b>{stats.total}</b></div>
+                                  <div style={{fontSize:12,marginTop:6}}>
+                                    {MEASURES.map(m=> <span key={m.code} className="pill">{m.code}: {stats.counts[m.code]} ({stats.pct[m.code]}%)</span>)}
+                                  </div>
+                                </div>
+                              </div>
+                              <div style={{overflowX:'auto'}}>
+                                <table>
+                                  <thead><tr><th>Date</th><th>Measure</th><th>Staff</th><th>Note</th></tr></thead>
+                                  <tbody>
+                                    {list.slice().sort((a,b)=>new Date(a.date)-new Date(b.date)).map(e=> (
+                                      <tr key={e.id}><td>{new Date(e.date).toLocaleDateString()}</td><td>{e.measure}</td><td>{e.staff || e.staffName || ''}</td><td>{e.note}</td></tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )
+                        })}
+                        {groupedByGoal.size===0 && <p className="muted">No entries for this member in the selected month.</p>}
+                        <div className="muted" style={{fontSize:12,marginTop:8}}>Legend — I: Independent • V: Verbal • R: Refuse • H: Hand over hand • NA: Not completed</div>
+                      </div>
+                    ): <p className="muted">Select a member to generate the report.</p>}
+                  </Section>
+                </>
+              )}
+
+              {/* STAFF */}
+              {tab==='staff' && isAdmin && (
+                <>
+                  <Section title={`Staff ${contextCompany? '— '+contextCompany.name:''}`} actions={<Button onClick={startNewStaff}>New Staff</Button>}>
+                    <div className="row" style={{marginBottom:8}}>
+                      <StaffPicker staff={staff.filter(s=> isDev? (contextCompanyId? s.companyId===contextCompanyId:true) : s.companyId===contextCompanyId)} value={editingStaffId} onChange={(id)=>{ const s=staff.find(x=>x.id===id); if(s){ startEditStaff(s); } }} />
+                      <span className="muted">Select a staff member to edit</span>
+                    </div>
+                    <div className="grid cols-2">
+                      {staff.filter(s=> (isDev? (contextCompanyId? s.companyId===contextCompanyId:true) : s.companyId===contextCompanyId)).length===0 && <p className="muted">No staff added.</p>}
+                      {staff.filter(s=> (isDev? (contextCompanyId? s.companyId===contextCompanyId:true) : s.companyId===contextCompanyId)).map(s=> (
+                        <div key={s.id} className="card" style={{margin:0}}>
+                          <div className="row">
+                            <div>
+                              <div style={{fontWeight:700,color:'var(--navy-800)'}}>{s.firstName} {s.lastName}</div>
+                              <div className="muted" style={{fontSize:14}}>{s.email} • {s.phone||''}</div>
+                              <div style={{marginTop:6}}>
+                                <span className="pill">{s.role}</span>
+                                <span className="pill">Caseload: {(s.caseload||[]).length}</span>
+                                {isDev && <span className="pill">Company: {(companies.find(c=>c.id===s.companyId)||{}).name||'—'}</span>}
+                              </div>
+                            </div>
+                            <div className="right no-print">
+                              <Button variant="ghost" onClick={()=>startEditStaff(s)}>Edit</Button>
+                              <Button variant="danger" onClick={()=>deleteStaff(s.id)}>Delete</Button>
+                            </div>
+                          </div>
+                        </div>
                       ))}
                     </div>
-                  </div>
-                </div>
-                <div className="row no-print" style={{marginTop:8}}>
-                  <Button onClick={()=>saveStaff('')}>Save (without PIN change)</Button>
-                  <Button variant="ghost" onClick={()=>{setStaffForm({...emptyStaff,companyId:contextCompanyId});setEditingStaffId('')}}>Clear</Button>
-                </div>
-              </Section>
-            </>
-          )}
+                  </Section>
 
-          {/* PROFILE */}
-          {tab==='profile' && currentUser && (
-            <>
-              <Section title="My Profile" actions={<span className="pill">Role: {currentUser.role}</span>}>
-                <div className="grid cols-3">
-                  <label><span>First Name</span><input value={profileForm.firstName} onChange={e=>setProfileForm({...profileForm,firstName:e.target.value})}/></label>
-                  <label><span>Last Name</span><input value={profileForm.lastName} onChange={e=>setProfileForm({...profileForm,lastName:e.target.value})}/></label>
-                  <label className="cols-2"><span>Email (login)</span><input type="email" value={profileForm.email} onChange={e=>setProfileForm({...profileForm,email:e.target.value})}/></label>
-                  <label><span>Phone</span><input value={profileForm.phone} onChange={e=>setProfileForm({...profileForm,phone:e.target.value})}/></label>
-                </div>
-                <div className="row no-print" style={{marginTop:8}}>
-                  <Button onClick={saveProfile}>Save Profile</Button>
-                </div>
-              </Section>
-
-              <Section title="Change PIN">
-                <p className="muted">Enter a new 6‑digit PIN. You’ll use this at next login.</p>
-                <PINSetter onSave={changeMyPIN} onSaveLabel="Update PIN" />
-              </Section>
-            </>
-          )}
-
-          {/* COMPANIES (Developer) */}
-          {tab==='companies' && isDev && (
-            <>
-              <Section title="Companies (Developer)" actions={<Button onClick={()=>setCompanyForm({...emptyCompany})}>New Company</Button>}>
-                <div className="grid cols-2">
-                  {companies.length===0 && <p className="muted">No companies yet.</p>}
-                  {companies.map(c=> (
-                    <div key={c.id} className="card" style={{margin:0}}>
-                      <div className="row">
-                        <div>
-                          <div style={{fontWeight:700,color:'var(--navy-800)'}}>{c.name}</div>
-                          <div className="muted" style={{fontSize:14}}>{c.email||''} • {c.phone||''}</div>
-                          <div className="muted" style={{fontSize:12}}>{c.address||''}</div>
-                          <div style={{marginTop:6}}>
-                            <span className="pill">{c.active===false? 'Inactive (Locked)':'Active'}</span>
-                            <span className="pill">Members: {members.filter(m=>m.companyId===c.id).length}</span>
-                            <span className="pill">Staff: {staff.filter(s=>s.companyId===c.id).length}</span>
-                          </div>
-                        </div>
-                        <div className="right no-print">
-                          <Button variant={c.active===false?'primary':'danger'} onClick={()=>toggleCompanyActive(c)}>{c.active===false?'Activate':'Disable'}</Button>
-                        </div>
+                  <Section title={editingStaffId? 'Edit Staff':'New Staff'}>
+                    <div className="grid cols-3">
+                      {isDev && (
+                        <label><span>Company</span>
+                          <select value={staffForm.companyId||''} onChange={e=>setStaffForm({...staffForm,companyId:e.target.value})}>
+                            <option value="">— Select —</option>
+                            {companies.map(c=> <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                        </label>
+                      )}
+                      {!isDev && <div className="pill">Company: {contextCompany? contextCompany.name:'—'}</div>}
+                      <label><span>First Name</span><input value={staffForm.firstName} onChange={e=>setStaffForm({...staffForm,firstName:e.target.value})}/></label>
+                      <label><span>Last Name</span><input value={staffForm.lastName} onChange={e=>setStaffForm({...staffForm,lastName:e.target.value})}/></label>
+                      <label><span>Role</span>
+                        <select value={staffForm.role} onChange={e=>setStaffForm({...staffForm,role:e.target.value})}>
+                          <option>{ROLES.Provider}</option>
+                          <option>{ROLES.Admin}</option>
+                          <option>{ROLES.SuperAdmin}</option>
+                          {isDev && <option>{ROLES.Developer}</option>}
+                        </select>
+                      </label>
+                      <label className="cols-2"><span>Email (login)</span><input type="email" value={staffForm.email} onChange={e=>setStaffForm({...staffForm,email:e.target.value})}/></label>
+                      <label><span>Phone</span><input value={staffForm.phone} onChange={e=>setStaffForm({...staffForm,phone:e.target.value})}/></label>
+                      <div className="cols-3" style={{borderTop:'1px dashed var(--gray-200)',paddingTop:10,marginTop:2}}>
+                        <span className="muted" style={{fontSize:12}}>Set/Reset 6‑digit PIN (leave blank to keep current)</span>
+                        <PINSetter onSave={(pin)=>saveStaff(pin)} onSaveLabel={editingStaffId? 'Save Staff':'Create Staff'} />
                       </div>
-                      <div className="grid cols-3" style={{marginTop:8}}>
-                        <label className="cols-3"><span>Lock Message</span><textarea value={c.lockMessage||''} onChange={e=> setCompanies(list=>list.map(x=> x.id===c.id? {...x,lockMessage:e.target.value}:x)) }></textarea></label>
+                      <div className="cols-3" style={{borderTop:'1px dashed var(--gray-200)',paddingTop:10}}>
+                        <span className="muted" style={{fontSize:12}}>Assign Caseload (active members in this company)</span>
+                        <div className="grid cols-3">
+                          {companyMembersActive.map(m=> (
+                            <label key={m.id} className="row" style={{border:'1px solid var(--gray-200)',borderRadius:10,padding:'6px 10px'}}>
+                              <input type="checkbox" checked={(staffForm.caseload||[]).includes(m.id)} onChange={()=>toggleCaseload(m.id)} />
+                              <span>{m.lastName}, {m.firstName}</span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </Section>
+                    <div className="row no-print" style={{marginTop:8}}>
+                      <Button onClick={()=>saveStaff('')}>Save (without PIN change)</Button>
+                      <Button variant="ghost" onClick={()=>{setStaffForm({...emptyStaff,companyId:contextCompanyId});setEditingStaffId('')}}>Clear</Button>
+                    </div>
+                  </Section>
+                </>
+              )}
 
-              <Section title="Add Company + Primary SuperUser">
-                <div className="grid cols-3">
-                  <label className="cols-2"><span>Company Name</span><input value={companyForm.name} onChange={e=>setCompanyForm({...companyForm,name:e.target.value})}/></label>
-                  <label><span>Company Email</span><input type="email" value={companyForm.email} onChange={e=>setCompanyForm({...companyForm,email:e.target.value})}/></label>
-                  <label><span>Phone</span><input value={companyForm.phone} onChange={e=>setCompanyForm({...companyForm,phone:e.target.value})}/></label>
-                  <label className="cols-3"><span>Address</span><input value={companyForm.address} onChange={e=>setCompanyForm({...companyForm,address:e.target.value})}/></label>
-                  <label><span>Status</span>
-                    <select value={companyForm.active===false? '0':'1'} onChange={e=>setCompanyForm({...companyForm,active:e.target.value==='1'})}>
-                      <option value="1">Active</option>
-                      <option value="0">Inactive (Locked)</option>
-                    </select>
-                  </label>
-                  <label className="cols-3"><span>Lock Message</span><input value={companyForm.lockMessage} onChange={e=>setCompanyForm({...companyForm,lockMessage:e.target.value})}/></label>
+              {/* PROFILE */}
+              {tab==='profile' && currentUser && (
+                <>
+                  <Section title="My Profile" actions={<span className="pill">Role: {currentUser.role}</span>}>
+                    <div className="grid cols-3">
+                      <label><span>First Name</span><input value={profileForm.firstName} onChange={e=>setProfileForm({...profileForm,firstName:e.target.value})}/></label>
+                      <label><span>Last Name</span><input value={profileForm.lastName} onChange={e=>setProfileForm({...profileForm,lastName:e.target.value})}/></label>
+                      <label className="cols-2"><span>Email (login)</span><input type="email" value={profileForm.email} onChange={e=>setProfileForm({...profileForm,email:e.target.value})}/></label>
+                      <label><span>Phone</span><input value={profileForm.phone} onChange={e=>setProfileForm({...profileForm,phone:e.target.value})}/></label>
+                    </div>
+                    <div className="row no-print" style={{marginTop:8}}>
+                      <Button onClick={saveProfile}>Save Profile</Button>
+                    </div>
+                  </Section>
 
-                  <div className="cols-3" style={{borderTop:'1px dashed var(--gray-200)',paddingTop:10,marginTop:2}}>
-                    <span className="muted" style={{fontSize:12}}>Primary SuperUser (for this company)</span>
-                    <label><span>First Name</span><input value={adminForCompany.firstName} onChange={e=>setAdminForCompany({...adminForCompany,firstName:e.target.value})}/></label>
-                    <label><span>Last Name</span><input value={adminForCompany.lastName} onChange={e=>setAdminForCompany({...adminForCompany,lastName:e.target.value})}/></label>
-                    <label className="cols-2"><span>Email (login)</span><input type="email" value={adminForCompany.email} onChange={e=>setAdminForCompany({...adminForCompany,email:e.target.value})}/></label>
-                    <label><span>Phone</span><input value={adminForCompany.phone} onChange={e=>setAdminForCompany({...adminForCompany,phone:e.target.value})}/></label>
-                    <label><span>6‑digit PIN</span><input type="password" inputMode="numeric" pattern="\d*" maxLength="6" placeholder="••••••" value={adminForCompany.pin} onChange={e=>setAdminForCompany({...adminForCompany,pin:e.target.value.replace(/\D/g,'')})}/></label>
-                  </div>
-                </div>
-                <div className="row no-print" style={{marginTop:8}}>
-                  <Button onClick={createCompanyWithAdmin}>Create Company & SuperUser</Button>
-                </div>
-              </Section>
+                  <Section title="Change PIN">
+                    <p className="muted">Enter a new 6‑digit PIN. You'll use this at next login.</p>
+                    <PINSetter onSave={changeMyPIN} onSaveLabel="Update PIN" />
+                  </Section>
+                </>
+              )}
+
+              {/* COMPANIES */}
+              {tab==='companies' && isDev && (
+                <>
+                  <Section title="Companies (Developer)" actions={<Button onClick={()=>setCompanyForm({...emptyCompany})}>New Company</Button>}>
+                    <div className="grid cols-2">
+                      {companies.length===0 && <p className="muted">No companies yet.</p>}
+                      {companies.map(c=> (
+                        <div key={c.id} className="card" style={{margin:0}}>
+                          <div className="row">
+                            <div>
+                              <div style={{fontWeight:700,color:'var(--navy-800)'}}>{c.name}</div>
+                              <div className="muted" style={{fontSize:14}}>{c.email||''} • {c.phone||''}</div>
+                              <div className="muted" style={{fontSize:12}}>{c.address||''}</div>
+                              <div style={{marginTop:6}}>
+                                <span className="pill">{c.active===false? 'Inactive (Locked)':'Active'}</span>
+                                <span className="pill">Members: {members.filter(m=>m.companyId===c.id).length}</span>
+                                <span className="pill">Staff: {staff.filter(s=>s.companyId===c.id).length}</span>
+                              </div>
+                            </div>
+                            <div className="right no-print">
+                              <Button variant={c.active===false?'primary':'danger'} onClick={()=>toggleCompanyActive(c)}>{c.active===false?'Activate':'Disable'}</Button>
+                            </div>
+                          </div>
+                          <div className="grid cols-3" style={{marginTop:8}}>
+                            <label className="cols-3"><span>Lock Message</span><textarea value={c.lockMessage||''} onChange={e=> setCompanies(list=>list.map(x=> x.id===c.id? {...x,lockMessage:e.target.value}:x)) }></textarea></label>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Section>
+
+                  <Section title="Add Company + Primary SuperUser">
+                    <div className="grid cols-3">
+                      <label className="cols-2"><span>Company Name</span><input value={companyForm.name} onChange={e=>setCompanyForm({...companyForm,name:e.target.value})}/></label>
+                      <label><span>Company Email</span><input type="email" value={companyForm.email} onChange={e=>setCompanyForm({...companyForm,email:e.target.value})}/></label>
+                      <label><span>Phone</span><input value={companyForm.phone} onChange={e=>setCompanyForm({...companyForm,phone:e.target.value})}/></label>
+                      <label className="cols-3"><span>Address</span><input value={companyForm.address} onChange={e=>setCompanyForm({...companyForm,address:e.target.value})}/></label>
+                      <label><span>Status</span>
+                        <select value={companyForm.active===false? '0':'1'} onChange={e=>setCompanyForm({...companyForm,active:e.target.value==='1'})}>
+                          <option value="1">Active</option>
+                          <option value="0">Inactive (Locked)</option>
+                        </select>
+                      </label>
+                      <label className="cols-3"><span>Lock Message</span><input value={companyForm.lockMessage} onChange={e=>setCompanyForm({...companyForm,lockMessage:e.target.value})}/></label>
+
+                      <div className="cols-3" style={{borderTop:'1px dashed var(--gray-200)',paddingTop:10,marginTop:2}}>
+                        <span className="muted" style={{fontSize:12}}>Primary SuperUser (for this company)</span>
+                        <label><span>First Name</span><input value={adminForCompany.firstName} onChange={e=>setAdminForCompany({...adminForCompany,firstName:e.target.value})}/></label>
+                        <label><span>Last Name</span><input value={adminForCompany.lastName} onChange={e=>setAdminForCompany({...adminForCompany,lastName:e.target.value})}/></label>
+                        <label className="cols-2"><span>Email (login)</span><input type="email" value={adminForCompany.email} onChange={e=>setAdminForCompany({...adminForCompany,email:e.target.value})}/></label>
+                        <label><span>Phone</span><input value={adminForCompany.phone} onChange={e=>setAdminForCompany({...adminForCompany,phone:e.target.value})}/></label>
+                        <label><span>6‑digit PIN</span><input type="password" inputMode="numeric" pattern="\d*" maxLength="6" placeholder="••••••" value={adminForCompany.pin} onChange={e=>setAdminForCompany({...adminForCompany,pin:e.target.value.replace(/\D/g,'')})}/></label>
+                      </div>
+                    </div>
+                    <div className="row no-print" style={{marginTop:8}}>
+                      <Button onClick={createCompanyWithAdmin}>Create Company & SuperUser</Button>
+                    </div>
+                  </Section>
+                </>
+              )}
             </>
           )}
         </>
